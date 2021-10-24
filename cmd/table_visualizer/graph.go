@@ -20,13 +20,11 @@ func makeGraph(t *Table, isAll bool) string {
 	out := createTableNode(t.Name)
 	for _, c := range t.Columns {
 		out += "\n" + t.Name + " -> \"" + t.Name + "." + c.Name + "\""
-		if len(c.Fks) > 0 {
-			for _, fk := range c.Fks {
-				out += createTableNode(fk.Table)
-				out += "\n\"" + t.Name + "." + c.Name + "\" -> " + "{ \"" + fk.Table + "." + fk.RefCol + "\" } [ style=dashed ]; \"" + fk.Table + "." + fk.RefCol + "\" -> " + fk.Table
-				if isAll {
-					out += "[style=invis];\n"
-				}
+		for _, fk := range c.Fks {
+			out += createTableNode(fk.Table)
+			out += "\n\"" + t.Name + "." + c.Name + "\" -> " + "{ \"" + fk.Table + "." + fk.RefCol + "\" } [ style=dashed ]; \"" + fk.Table + "." + fk.RefCol + "\" -> " + fk.Table
+			if isAll {
+				out += "[style=invis];\n"
 			}
 		}
 	}
