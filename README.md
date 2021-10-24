@@ -27,3 +27,8 @@ A tool to visually represent database table connections. Supports MySQL/MariaDB/
 ```bash
 ./table_viz -u root -p 1234 -h 172.17.0.3:3306 -d test_db -t user_logs -s mariadb -o out_m_user_logs.jpg
 ```
+
+## Examples
+
+![sample 1](//sample_out/out_p_char_other_work.jpg)
+![sample 2](/sample_out/out_p.jpg)
