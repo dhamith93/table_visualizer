@@ -30,5 +30,5 @@ A tool to visually represent database table connections. Supports MySQL/MariaDB/
 
 ## Examples
 
-![sample 1](//sample_out/out_p_char_other_work.jpg)
+![sample 1](/sample_out/out_p_char_other_work.jpg)
 ![sample 2](/sample_out/out_p.jpg)
