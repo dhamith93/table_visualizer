@@ -1,56 +1,43 @@
 package main
 
-func generateGraphForAll(tables []Table) string {
+func generateGraph(tables []Table) string {
 	out := graphStart()
 	for _, t := range tables {
-		out += makeGraph(&t, true)
+		out += createGraphTable(&t)
+	}
+	for _, t := range tables {
+		out += createFkRelationships(&t)
 	}
 	out += "\n}"
 	return out
-}
-
-func generateGraphForOne(t *Table) string {
-	out := graphStart()
-	out += makeGraph(t, false)
-	out += "\n}"
-	return out
-}
-
-func makeGraph(t *Table, isAll bool) string {
-	out := createTableNode(t.Name)
-	for _, c := range t.Columns {
-		out += "\n" + t.Name + " -> \"" + t.Name + "." + c.Name + "\""
-		for _, fk := range c.Fks {
-			out += createTableNode(fk.Table)
-			out += "\n\"" + t.Name + "." + c.Name + "\" -> " + "{ \"" + fk.Table + "." + fk.RefCol + "\" } [ style=dashed ]; \"" + fk.Table + "." + fk.RefCol + "\" -> " + fk.Table
-			if isAll {
-				out += "[style=invis];\n"
-			}
-		}
-	}
-	return out + "\n"
 }
 
 func graphStart() string {
-	return `digraph G {
-		graph [
-			rankdir=LR
-		];
-		
-		graph [
-			splines=polyline
-			rankdir=LR
-		];
-                
-		edge [
-			arrowhead=normal,
-			weight=1
-		];`
+	return `digraph G {		
+		node [shape=plaintext]
+		`
 }
 
-func createTableNode(name string) string {
-	return "\n" + name + `[
-		height=0.84444,
-		margin=0.3,
-		shape=box];`
+func createGraphTable(t *Table) string {
+	out := "\n" + t.Name + `[label=<
+	<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+	 <TR>
+	  <TD BGCOLOR="gray" ALIGN="LEFT">` + t.Name + `     </TD>
+	 </TR>`
+	for _, c := range t.Columns {
+		out += `<TR>
+		<TD PORT="` + t.Name + "." + c.Name + `" ALIGN="LEFT">` + c.Name + ` ` + c.Type + `  </TD>
+	   </TR>`
+	}
+	return out + "\n</TABLE>>];\n"
+}
+
+func createFkRelationships(t *Table) string {
+	out := "\n"
+	for _, c := range t.Columns {
+		for _, fk := range c.Fks {
+			out += fk.Table + ":" + "\"" + fk.Table + "." + fk.RefCol + "\" -> " + t.Name + ":\"" + t.Name + "." + c.Name + "\" [ style=dashed ];\n"
+		}
+	}
+	return out
 }
