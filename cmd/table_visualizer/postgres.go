@@ -144,19 +144,30 @@ func (p *Postgres) GetTables() ([]Table, error) {
 }
 
 func (p *Postgres) GetFks(tableName string, colName string) ([]Fk, error) {
-	q := `SELECT
-		string_agg(ccu.table_name, ',') AS foreign_table_name,
-		string_agg(ccu.column_name, ',') AS foreign_column_name
-	FROM 
-		information_schema.table_constraints AS tc 
-	JOIN information_schema.key_column_usage AS kcu
-  		ON tc.constraint_name = kcu.constraint_name
-  		AND tc.table_schema = kcu.table_schema
-		JOIN information_schema.constraint_column_usage AS ccu
-  		ON ccu.constraint_name = tc.constraint_name
-  		AND ccu.table_schema = tc.table_schema
-	WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = $1 AND kcu.column_name = $2
-	GROUP BY tc.table_name;`
+	q := `
+	  WITH unnested_confkey AS (
+		SELECT oid, unnest(confkey) as confkey
+		FROM pg_constraint
+	  ),
+	  unnested_conkey AS (
+		SELECT oid, unnest(conkey) as conkey
+		FROM pg_constraint
+	  )
+	  SELECT
+	    string_agg(tbl.relname, ','),
+		string_agg(col.attname, ',')
+	  FROM pg_constraint c
+	  LEFT JOIN unnested_conkey con ON c.oid = con.oid
+	  LEFT JOIN pg_class tbl ON tbl.oid = c.conrelid
+	  LEFT JOIN pg_attribute col ON (col.attrelid = tbl.oid AND col.attnum = con.conkey)
+	  LEFT JOIN pg_class referenced_tbl ON c.confrelid = referenced_tbl.oid
+	  LEFT JOIN unnested_confkey conf ON c.oid = conf.oid
+	  LEFT JOIN pg_attribute referenced_field ON (referenced_field.attrelid = c.confrelid AND referenced_field.attnum = conf.confkey)
+	  WHERE c.contype = 'f'
+	  AND referenced_tbl.relname = $1
+	  AND referenced_field.attname = $2
+	  GROUP BY referenced_field.attname;
+	`
 	fks := []Fk{}
 
 	out, err := p.Select(q, tableName, colName)
