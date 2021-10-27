@@ -39,14 +39,17 @@ func main() {
 	db.Connect(*user, *password, *host, *database)
 	defer db.Close()
 	var out string
+	tables := []Table{}
 
 	if *showAll && len(*tableName) == 0 {
-		tables, _ := db.GetTables()
-		out = generateGraphForAll(tables)
+		tables, _ = db.GetTables()
 	} else {
 		table, _ := db.GetTable(*tableName)
-		out = generateGraphForOne(&table)
+		tables = append(tables, table)
+		tables = collectFkTables(&table, db, tables)
 	}
+
+	out = generateGraph(tables)
 
 	g := graphviz.New()
 	graph, err := graphviz.ParseBytes([]byte(out))
@@ -67,4 +70,29 @@ func main() {
 	if err := g.RenderFilename(graph, graphviz.Format(graphviz.DOT), *outputPath+".dot"); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func collectFkTables(table *Table, db Database, tables []Table) []Table {
+	for _, c := range table.Columns {
+		for _, fk := range c.Fks {
+			if !isExists(fk.Table, tables) {
+				fkT, err := db.GetTable(fk.Table)
+				if err != nil {
+					log.Fatal(err)
+				}
+				tables = collectFkTables(&fkT, db, tables)
+				tables = append(tables, fkT)
+			}
+		}
+	}
+	return tables
+}
+
+func isExists(tableName string, tables []Table) bool {
+	for _, t := range tables {
+		if t.Name == tableName {
+			return true
+		}
+	}
+	return false
 }
