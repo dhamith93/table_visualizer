@@ -28,8 +28,7 @@ func main() {
 	var db Database
 
 	switch *rdbms {
-	case "mysql":
-	case "mariadb":
+	case "mysql", "mariadb":
 		db = &MySql{}
 	case "postgres":
 		db = &Postgres{}
